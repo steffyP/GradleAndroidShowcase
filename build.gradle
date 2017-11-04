@@ -1,0 +1,45 @@
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:2.3.3'
+
+        // NOTE: Do not place your application dependencies here; they belong
+        // in the individual module build.gradle files
+    }
+}
+
+allprojects {
+    repositories {
+        jcenter()
+        maven {
+            url "https://maven.google.com"
+        }
+
+    }
+}
+
+// helper method to make the server start in background
+// required, as the running the server would block the
+// task, details see https://stackoverflow.com/questions/31434928/android-gradle-task-google-appengine
+task startServerInBackground(dependsOn: ':joke_backend:appengineRun'){
+    description 'starts the server in background mode'
+    project(":joke_backend").afterEvaluate { backend ->
+        backend.extensions.appengine.daemon = true
+    }
+}
+
+task testOnServer(){
+    description 'starts the backend server in background, runs the instrumented android tests, and shuts down the server'
+    dependsOn('startServerInBackground')
+    dependsOn(':app:connectedAndroidTest')
+    dependsOn(':joke_backend:appengineStop')
+}
+
+// specify the order of tasks
+tasks.getByPath(':app:connectedAndroidTest').mustRunAfter startServerInBackground
+tasks.getByPath(':joke_backend:appengineStop').mustRunAfter(':app:connectedAndroidTest')
+
